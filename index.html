@@ -1,0 +1,569 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+ <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+   <script>
+L.ImageTransform=L.ImageOverlay.extend({initialize:function(url,anchors,options){L.ImageOverlay.prototype.initialize.call(this,url,anchors,options);this.setAnchors(anchors)},setAnchors:function(anchors){this._anchors=[];this._bounds=L.latLngBounds(anchors);for(var i=0,len=anchors.length;i<len;i++){var yx=anchors[i];this._anchors.push(L.latLng(yx))} if(this._map){this._reset()}},_latLngToLayerPoint:function(latlng){return this._map.project(latlng)._subtract(this._map.getPixelOrigin())},setClip:function(clipLatLngs){var topLeft=this._latLngToLayerPoint(this._bounds.getNorthWest()),pixelClipPoints=[];this.options.clip=clipLatLngs;for(var p=0;p<clipLatLngs.length;p++){var mercPoint=this._latLngToLayerPoint(clipLatLngs[p]),pixel=L.ImageTransform.Utils.project(this._matrix3d_inverse,mercPoint.x-topLeft.x,mercPoint.y-topLeft.y);pixelClipPoints.push(L.point(pixel[0],pixel[1]))} this.setClipPixels(pixelClipPoints)},setClipPixels:function(pixelClipPoints){this._pixelClipPoints=pixelClipPoints;this._drawCanvas()},setUrl:function(url){this._url=url;this._imgNode.src=this._url},getClip:function(){return this.options.clip},_initImage:function(){this._image=L.DomUtil.create('div','leaflet-image-layer');if(this._map.options.zoomAnimation&&L.Browser.any3d){L.DomUtil.addClass(this._image,'leaflet-zoom-animated')}else{L.DomUtil.addClass(this._image,'leaflet-zoom-hide')} this._imgNode=L.DomUtil.create('img');if(this.options.clip){this._canvas=L.DomUtil.create('canvas','leaflet-canvas-transform');this._image.appendChild(this._canvas);this._canvas.style[L.DomUtil.TRANSFORM_ORIGIN]='0 0'}else{this._image.appendChild(this._imgNode);this._imgNode.style[L.DomUtil.TRANSFORM_ORIGIN]='0 0';this._imgNode.style.display='none'} this._updateOpacity();L.extend(this._imgNode,{galleryimg:'no',onselectstart:L.Util.falseFn,onmousemove:L.Util.falseFn,onload:L.bind(this._onImageLoad,this),onerror:L.bind(this._onImageError,this),src:this._url})},_onImageError:function(){this.fire('error')},_onImageLoad:function(){if(this.options.clip){this._canvas.width=this._imgNode.width;this._canvas.height=this._imgNode.height}else{this._imgNode.style.display='inherit'} this._reset();this.fire('load')},_reset:function(){if(this.options.clip&&!this._imgNode.complete)return;var div=this._image,imgNode=this.options.clip?this._canvas:this._imgNode,topLeft=this._latLngToLayerPoint(this._bounds.getNorthWest()),size=this._latLngToLayerPoint(this._bounds.getSouthEast())._subtract(topLeft),anchors=this._anchors,w=this._imgNode.width,h=this._imgNode.height,pixels=[],i;for(var i=0,len=anchors.length;i<len;i++){var p=this._latLngToLayerPoint(anchors[i]);pixels.push(L.point(p.x-topLeft.x,p.y-topLeft.y))} L.DomUtil.setPosition(div,topLeft);div.style.width=size.x+'px';div.style.height=size.y+'px';var matrix3d=this._matrix3d=L.ImageTransform.Utils.general2DProjection(0,0,pixels[0].x,pixels[0].y,w,0,pixels[1].x,pixels[1].y,w,h,pixels[2].x,pixels[2].y,0,h,pixels[3].x,pixels[3].y);if(!matrix3d[8]){return} for(i=0;i!=9;++i)matrix3d[i]=matrix3d[i]/matrix3d[8];this._matrix3d_inverse=L.ImageTransform.Utils.adj(matrix3d);imgNode.style[L.DomUtil.TRANSFORM]=this._getMatrix3dCSS(this._matrix3d);if(this.options.clip){if(this._pixelClipPoints){this.options.clip=[];for(var p=0;p<this._pixelClipPoints.length;p++){var mercPoint=L.ImageTransform.Utils.project(matrix3d,this._pixelClipPoints[p].x,this._pixelClipPoints[p].y);this.options.clip.push(this._map.layerPointToLatLng(L.point(mercPoint[0]+topLeft.x,mercPoint[1]+topLeft.y)))} this._drawCanvas()}else{this.setClip(this.options.clip)}}},_getMatrix3dCSS:function(arr){var css='matrix3d(';css+=arr[0].toFixed(9)+","+arr[3].toFixed(9)+", 0,"+arr[6].toFixed(9);css+=","+arr[1].toFixed(9)+","+arr[4].toFixed(9)+", 0,"+arr[7].toFixed(9);css+=",0, 0, 1, 0";css+=","+arr[2].toFixed(9)+","+arr[5].toFixed(9)+", 0, "+arr[8].toFixed(9)+")";return css},_drawCanvas:function(){var canvas=this._canvas,ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=ctx.createPattern(this._imgNode,"no-repeat");ctx.beginPath();for(var i=0,len=this._pixelClipPoints.length;i<len;i++){var pix=this._pixelClipPoints[i];ctx[i?'lineTo':'moveTo'](pix.x,pix.y)} ctx.closePath();ctx.fill()}});L.imageTransform=function(url,bounds,options){return new L.ImageTransform(url,bounds,options)};L.DomUtil.TRANSFORM_ORIGIN=L.DomUtil.testProp(['transformOrigin','WebkitTransformOrigin','OTransformOrigin','MozTransformOrigin','msTransformOrigin']);!function(){function adj(m){return[m[4]*m[8]-m[5]*m[7],m[2]*m[7]-m[1]*m[8],m[1]*m[5]-m[2]*m[4],m[5]*m[6]-m[3]*m[8],m[0]*m[8]-m[2]*m[6],m[2]*m[3]-m[0]*m[5],m[3]*m[7]-m[4]*m[6],m[1]*m[6]-m[0]*m[7],m[0]*m[4]-m[1]*m[3]]} function multmm(a,b){var c=Array(9);for(var i=0;i!=3;++i){for(var j=0;j!=3;++j){var cij=0;for(var k=0;k!=3;++k){cij+=a[3*i+k]*b[3*k+j]} c[3*i+j]=cij}} return c} function multmv(m,v){return[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]]} function basisToPoints(x1,y1,x2,y2,x3,y3,x4,y4){var m=[x1,x2,x3,y1,y2,y3,1,1,1];var v=multmv(adj(m),[x4,y4,1]);return multmm(m,[v[0],0,0,0,v[1],0,0,0,v[2]])} L.ImageTransform.Utils={general2DProjection:function(x1s,y1s,x1d,y1d,x2s,y2s,x2d,y2d,x3s,y3s,x3d,y3d,x4s,y4s,x4d,y4d){var s=basisToPoints(x1s,y1s,x2s,y2s,x3s,y3s,x4s,y4s);var d=basisToPoints(x1d,y1d,x2d,y2d,x3d,y3d,x4d,y4d);return multmm(d,adj(s))},project:function(m,x,y){var v=multmv(m,[x,y,1]);return[v[0]/v[2],v[1]/v[2]]},adj:adj}}()
+   </script>
+
+    <style>
+        #map {
+        	float:left;
+            width: 100%;
+            height: 100vh;
+        }
+        #menu {
+        	float:right;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .leaflet-grab {
+	cursor:default;
+}
+    </style>
+
+</head>
+<body>
+
+<div id="menu">
+
+<input type="file" id="file1" accept="image/*" onChange="previewImage2()">
+
+
+
+<button id="downloadJsonBtn">図面の位置情報DL</button>
+
+<div id="map" style="height: 100%"></div>
+</div>
+
+    <script>
+document.getElementById('downloadJsonBtn').disabled = true
+// Initialize the map
+var map = L.map('map').setView([36.5, 136.5], 10); // Set your initial view coordinates and zoom level
+
+
+
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+	maxNativeZoom: 18,
+	maxZoom: 22,
+}).addTo(map);
+
+
+
+
+var transformedImage = {}
+var lastZoom
+
+const dropArea = document.getElementById('map');
+
+// ドラッグオーバーしたときのスタイル変更
+dropArea.addEventListener('dragover', (event) => {
+	event.preventDefault();
+	dropArea.style.backgroundColor = '#f0f0f0';
+});
+
+// ドラッグアウトしたときのスタイルを戻す
+dropArea.addEventListener('dragleave', () => {
+	dropArea.style.backgroundColor = '';
+});
+
+// ドロップされたときの処理
+dropArea.addEventListener('drop', (event) => {
+	event.preventDefault();
+	dropArea.style.backgroundColor = '';
+
+	const containerPoint = map.mouseEventToContainerPoint(event);
+	const latlng0 = map.containerPointToLatLng(containerPoint);
+	map.setView(latlng0, 18)
+
+	previewImage(event)
+})
+
+
+function previewImage2() {
+	map.setZoom(18)
+
+	var file = document.getElementById("file1").files[0];
+	fileInputname = document.getElementById('file1').files[0].name
+	imageUrl = URL.createObjectURL(file);
+
+	preview(imageUrl)
+}
+
+function previewImage(event) {
+	map.setZoom(18)
+	var file = event.dataTransfer.files[0];
+	fileInputname = event.dataTransfer.files[0].name
+	imageUrl = URL.createObjectURL(file);
+	preview(imageUrl)
+}
+
+
+function preview(imageUrl) {
+
+	var img = new Image();
+	img.onload = function() {
+
+
+		imageWidth = img.width;
+		imageHeight = img.height;
+
+		tmpaspect = imageWidth / imageHeight
+
+		// 画像オーバーレイの追加
+		var bounds = [
+			[0, 0],
+			[imageHeight, imageWidth]
+		]; // 左上と右下の座標を設定
+
+
+		tmpc = map.options.crs.project(map.getCenter())
+		tmpw = map.getBounds().getWest()
+		tmpw = (tmpw * 20037508.34 / 180)
+		haba = (tmpc.x - tmpw) / 2
+		takasa = haba / tmpaspect
+
+		nwWM = [tmpc.y + takasa, tmpc.x - haba]
+		neWM = [tmpc.y + takasa, tmpc.x + haba]
+		swWM = [tmpc.y - takasa, tmpc.x - haba]
+		seWM = [tmpc.y - takasa, tmpc.x + haba]
+
+		nw = mercatorToLatLng(nwWM)
+		ne = mercatorToLatLng(neWM)
+		sw = mercatorToLatLng(swWM)
+		se = mercatorToLatLng(seWM)
+
+		var anchors = [
+			[nw[1], nw[0]],
+			[ne[1], ne[0]],
+			[se[1], se[0]],
+			[sw[1], sw[0]]
+		]
+
+		transformedImage[fileInputname] = L.imageTransform(imageUrl, anchors, {
+			clip: anchors,
+			interactive: true,
+			opacity: 0.7
+		}).on("contextmenu", henshu)
+
+		transformedImage[fileInputname].addTo(map);
+		transformedImage[fileInputname].img = fileInputname
+	};
+	img.src = imageUrl;
+
+}
+
+
+
+function henshu(e) {
+
+	var polygon
+	lastZoom = map.getZoom();
+	transformedImage[fileInputname].off("contextmenu", henshu)
+
+	if (map1) {
+		map1.remove()
+	}
+	document.getElementById('downloadJsonBtn').disabled = false
+	if (polygon) {
+		polygon.remove()
+	}
+	polygon = null
+	tmpclip = e.target.getClip()
+	fileInputname2 = e.target.img
+
+	polygon = L.polygon(tmpclip, {
+		color: 'red',
+		fillOpacity: 0
+	}).addTo(map)
+
+
+
+
+	const redIcon = L.icon({
+		iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', // 赤色のアイコンURL
+		shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', // 影のURL
+		iconSize: [25, 41], // アイコンのサイズ
+		iconAnchor: [12, 41], // アンカー位置
+		popupAnchor: [1, -34], // ポップアップ位置
+		shadowSize: [41, 41] // 影のサイズ
+	});
+
+
+
+	let containerPoint = map.mouseEventToContainerPoint(event);
+	let latlng1 = map.containerPointToLatLng(containerPoint);
+
+	tmpc = map.options.crs.project(latlng1)
+	var map1 = L.marker(latlng1, {
+		draggable: true,
+		icon: redIcon,
+	}).addTo(map);
+	// 地図移動・ズーム時に画面固定
+	function updateMarkerPosition() {
+		currentZoom = map.getZoom();
+
+		// 🔸ズームレベルが変わっていたら処理をスキップ
+		if (currentZoom !== lastZoom) {
+			lastZoom = currentZoom;
+			return;
+		}
+		latlng1 = map.containerPointToLatLng(containerPoint);
+		map1.setLatLng(latlng1);
+
+	}
+	map.on('move resize', updateMarkerPosition);
+
+
+	// ドラッグ終了時に画面座標を固定
+	map1.on('dragend', (e) => {
+		// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
+		containerPoint = map.latLngToContainerPoint(e.target.getLatLng());
+		updateMarkerPosition();
+
+		tmpc = map.options.crs.project(map1.getLatLng())
+	});
+
+
+
+	map1.on("contextmenu", () => map1context())
+	
+	
+	function map1context(){
+		latlngk = map1.getLatLng()
+		kiten = map.options.crs.project(map1.getLatLng())
+
+		map1.remove()
+
+		map.off("moveend", ido1);
+		map.off('move resize', updateMarkerPosition);
+		map.on("moveend", ido2);
+		mapki = L.marker(latlngk, {
+			draggable: false,
+			icon: redIcon,
+			opacity: 0.5
+		}).addTo(map);
+		mapki.on("contextmenu", () => {
+			tmpc = map.options.crs.project(latlngk)
+			mapki.remove()
+			map2.remove()
+			map1 = L.marker(latlngk, {
+				draggable: true,
+				icon: redIcon,
+			}).addTo(map);
+			map1.on("contextmenu", () => map1context())
+			map.off("moveend", ido2);
+			map.on("moveend", ido1);
+			map.off('move resize', updateMarkerPosition2);
+			map.on('move resize', updateMarkerPosition);
+			// ドラッグ終了時に画面座標を固定
+			map1.on('dragend', (e) => {
+				// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
+				containerPoint = map.latLngToContainerPoint(e.target.getLatLng());
+				updateMarkerPosition();
+
+				tmpc = map.options.crs.project(map1.getLatLng())
+			});
+
+		})
+
+		function ido2() {
+
+
+
+
+
+			an0 = map.options.crs.project(transformedImage[fileInputname2]._anchors[0])
+			an1 = map.options.crs.project(transformedImage[fileInputname2]._anchors[1])
+			an2 = map.options.crs.project(transformedImage[fileInputname2]._anchors[3])
+			an3 = map.options.crs.project(transformedImage[fileInputname2]._anchors[2])
+
+
+
+
+			//console.log(kiten)
+			sinten = map.options.crs.project(map2.getLatLng())
+			//console.log(sinten)
+			//console.log(mototen)
+
+			nwWM = transformPoint(kiten.x, kiten.y, mototen.x, mototen.y, sinten.x, sinten.y, an0.x, an0.y)
+			neWM = transformPoint(kiten.x, kiten.y, mototen.x, mototen.y, sinten.x, sinten.y, an1.x, an1.y)
+			swWM = transformPoint(kiten.x, kiten.y, mototen.x, mototen.y, sinten.x, sinten.y, an2.x, an2.y)
+			seWM = transformPoint(kiten.x, kiten.y, mototen.x, mototen.y, sinten.x, sinten.y, an3.x, an3.y)
+
+
+			nw = mercatorToLatLng(nwWM)
+			ne = mercatorToLatLng(neWM)
+			sw = mercatorToLatLng(swWM)
+			se = mercatorToLatLng(seWM)
+
+			var anchors = [
+				[nw[1], nw[0]],
+				[ne[1], ne[0]],
+				[se[1], se[0]],
+				[sw[1], sw[0]]
+			]
+
+
+
+			function transformPoint(cx, cy, x1, y1, x2, y2, px, py) {
+				const vx = x1 - cx,
+					vy = y1 - cy;
+				const v2x = x2 - cx,
+					v2y = y2 - cy;
+				const len = Math.hypot(vx, vy);
+				const len2 = Math.hypot(v2x, v2y);
+				if (len === 0) throw new Error("基準点 A が中心と一致しています。別の A を指定してください。");
+
+				const s = len2 / len; // scale
+				const angle1 = Math.atan2(vy, vx);
+				const angle2 = Math.atan2(v2y, v2x);
+				const theta = angle2 - angle1; // ラジアン
+
+				const dx = px - cx,
+					dy = py - cy;
+				const cos = Math.cos(theta),
+					sin = Math.sin(theta);
+				const pxNew = s * (dx * cos - dy * sin) + cx;
+				const pyNew = s * (dx * sin + dy * cos) + cy;
+				return [pyNew, pxNew];
+			}
+
+
+
+
+			transformedImage[fileInputname2].setAnchors(anchors)
+
+
+			if (polygon) {
+				polygon.remove()
+			}
+			polygon = null
+
+			tmpclip = transformedImage[fileInputname2].getClip()
+
+			polygon = L.polygon(tmpclip, {
+				color: 'red',
+				fillOpacity: 0
+			}).addTo(map)
+
+
+			mototen = sinten
+
+		}
+
+
+
+
+
+		// 初期マーカー（右下付近）
+
+		let latlng2 = polygon.getCenter()
+
+		const map2 = L.marker(latlng2, {
+			draggable: true
+		}).addTo(map);
+		mototen = map.options.crs.project(map2.getLatLng())
+		// 地図移動・ズーム時に画面固定
+		function updateMarkerPosition2() {
+			currentZoom = map.getZoom();
+
+			// 🔸ズームレベルが変わっていたら処理をスキップ
+			if (currentZoom !== lastZoom) {
+				lastZoom = currentZoom;
+				return;
+			}
+			latlng2 = map.containerPointToLatLng(containerPoint);
+			map2.setLatLng(latlng2);
+
+		}
+		map.on('move resize', updateMarkerPosition2);
+
+		// ドラッグ終了時に画面座標を固定
+		map2.on('dragend', (e) => {
+
+			// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
+			containerPoint = map.latLngToContainerPoint(e.target.getLatLng());
+			updateMarkerPosition2();
+
+			mototen = map.options.crs.project(map2.getLatLng())
+		});
+
+
+		map2.on("contextmenu", () => {
+			map2.remove()
+			mapki.remove()
+			map.off("moveend", ido2);
+			polygon.on("contextmenu", hozon).on("dblclick", sakujo);
+			polygon.editing.enable();
+
+
+			function hozon(e) {
+				kari1 = polygon.getLatLngs()[0];
+
+				transformedImage[fileInputname2].setClip(kari1);
+				polygon.remove()
+
+
+
+				ichi.anchor = transformedImage[fileInputname2].options.clip
+				ichi.clip = transformedImage[fileInputname2]._anchors
+
+				tmpclip = transformedImage[fileInputname2].getClip()
+
+				polygon = L.polygon(tmpclip, {
+					color: 'blue',
+					fillOpacity: 0
+				}).addTo(map).on("contextmenu", () => {
+
+
+					polygon.remove()
+					document.getElementById('downloadJsonBtn').disabled = true
+					transformedImage[fileInputname].on("contextmenu", henshu)
+
+				})
+
+
+			}
+
+			function sakujo(e) {
+				if (window.confirm("Do you really want to remove?")) {
+					e.target.remove()
+					transformedImage[fileInputname2].remove()
+
+				}
+
+			}
+
+
+
+		})
+	}
+
+	map.on("moveend", ido1)
+
+
+	function ido1() {
+
+
+
+		tmpcnew = map.options.crs.project(map1.getLatLng())
+
+
+		sabunx = tmpcnew.x - tmpc.x
+		sabuny = tmpcnew.y - tmpc.y
+		tmpc = tmpcnew
+		nwWM = [nwWM[0] + sabuny, nwWM[1] + sabunx]
+		neWM = [neWM[0] + sabuny, neWM[1] + sabunx]
+		swWM = [swWM[0] + sabuny, swWM[1] + sabunx]
+		seWM = [seWM[0] + sabuny, seWM[1] + sabunx]
+
+		nw = mercatorToLatLng(nwWM)
+		ne = mercatorToLatLng(neWM)
+		sw = mercatorToLatLng(swWM)
+		se = mercatorToLatLng(seWM)
+
+		anchors = [
+			[nw[1], nw[0]],
+			[ne[1], ne[0]],
+			[se[1], se[0]],
+			[sw[1], sw[0]]
+		]
+
+		transformedImage[fileInputname2].setAnchors(anchors)
+
+
+		if (polygon) {
+			polygon.remove()
+		}
+		polygon = null
+
+		tmpclip = transformedImage[fileInputname2].getClip()
+
+		polygon = L.polygon(tmpclip, {
+			color: 'red',
+			fillOpacity: 0
+		}).addTo(map)
+
+
+
+
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function mercatorToLatLng(mercatorXY) {
+	var x = mercatorXY[1];
+	var y = mercatorXY[0];
+
+	var lng = (x / 20037508.34) * 180;
+	var lat = (y / 20037508.34) * 180;
+	lat = 180 / Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180)) - Math.PI / 2);
+
+	return [lng, lat];
+}
+
+
+
+
+
+var ichi = {}
+var fileInputname
+
+document.getElementById('downloadJsonBtn').addEventListener('click', async () => {
+	// JSONオブジェクト
+	const jsonObject = ichi
+
+	// JSONオブジェクトを文字列に変換
+	jsonString = JSON.stringify(jsonObject, null, 2);
+	jsonString = jsonString
+	// Blobオブジェクトを作成
+	const blob = new Blob([jsonString], {
+		type: 'application/json'
+	});
+
+	// ファイル保存ダイアログを表示して FileSystemFileHandle オブジェクトを取得
+	const fh = await window.showSaveFilePicker({
+		suggestedName: fileInputname2 + '.txt'
+	});
+
+
+	const stream = await fh.createWritable();
+	await stream.write(blob);
+	await stream.close();
+
+});
+
+
+
+
+    </script>
+    
+    
+    
+</body>
+</html>
