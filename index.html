@@ -439,7 +439,7 @@ function henshu(e) {
 				if (window.confirm("Do you really want to remove?")) {
 					e.target.remove()
 					transformedImage[fileInputname2].remove()
-
+					transformedImage[fileInputname].setOpacity(1)
 				}
 
 			}
@@ -567,3 +567,4 @@ document.getElementById('downloadJsonBtn').addEventListener('click', async () =>
     
 </body>
 </html>
+
