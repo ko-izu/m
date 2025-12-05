@@ -617,6 +617,15 @@ function henshu(e) {
 				}).addTo(map);
 				
 				map2.on("contextmenu", () => map2context())
+				map2.on('dragend', (e) => {
+
+					containerPoint2 = map.latLngToContainerPoint(e.target.getLatLng());
+					updateMarkerPosition2();
+
+					mototen = map.options.crs.project(map2.getLatLng())
+				});
+
+				
 				map.on('move resize', updateMarkerPosition2);
 
 				map.on("moveend", ido2);
@@ -798,4 +807,5 @@ document.getElementById('downloadJsonBtn').addEventListener('click', async () =>
     
 </body>
 </html>
+
 
