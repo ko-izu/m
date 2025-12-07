@@ -340,13 +340,15 @@ function henshu(e) {
 	}
 	map.on('move resize', updateMarkerPosition);
 
-
+	map1.on('dragstart', (e) => {
+		transformedImage[fileInputname2].setOpacity(1)
+	});
 	// ドラッグ終了時に画面座標を固定
 	map1.on('dragend', (e) => {
 		// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
 		containerPoint1 = map.latLngToContainerPoint(e.target.getLatLng());
 		updateMarkerPosition();
-
+		transformedImage[fileInputname2].setOpacity(0.7)
 		tmpc = map.options.crs.project(map1.getLatLng())
 	});
 
@@ -428,12 +430,17 @@ function henshu(e) {
 
 				}
 
+
+				map1.on('dragstart', (e) => {
+					transformedImage[fileInputname2].setOpacity(1)
+				});
+
 				// ドラッグ終了時に画面座標を固定
 				map1.on('dragend', (e) => {
 					// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
 					containerPoint1 = map.latLngToContainerPoint(e.target.getLatLng());
 					updateMarkerPosition();
-
+					transformedImage[fileInputname2].setOpacity(0.7)
 					mototen = map.options.crs.project(map1.getLatLng())
 				});
 			
@@ -459,12 +466,16 @@ function henshu(e) {
 			map.on("moveend", ido1);
 
 			map.on('move resize', updateMarkerPosition);
+
+			map1.on('dragstart', (e) => {
+				transformedImage[fileInputname2].setOpacity(1)
+			});
 			// ドラッグ終了時に画面座標を固定
 			map1.on('dragend', (e) => {
 				// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
 				containerPoint1 = map.latLngToContainerPoint(e.target.getLatLng());
 				updateMarkerPosition();
-
+				transformedImage[fileInputname2].setOpacity(0.7)
 				tmpc = map.options.crs.project(map1.getLatLng())
 			});
 
@@ -575,13 +586,16 @@ function henshu(e) {
 
 		map.on('move resize', updateMarkerPosition2);
 
+		map2.on('dragstart', (e) => {
+			transformedImage[fileInputname2].setOpacity(1)
+		});		
 		// ドラッグ終了時に画面座標を固定
 		map2.on('dragend', (e) => {
 
 			// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
 			containerPoint2 = map.latLngToContainerPoint(e.target.getLatLng());
 			updateMarkerPosition2();
-
+			transformedImage[fileInputname2].setOpacity(0.7)
 			mototen = map.options.crs.project(map2.getLatLng())
 		});
 
@@ -619,14 +633,16 @@ function henshu(e) {
 				}).addTo(map);
 				
 				map2.on("contextmenu", () => map2context())
-						map2.on('dragend', (e) => {
-
-			// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
-			containerPoint2 = map.latLngToContainerPoint(e.target.getLatLng());
-			updateMarkerPosition2();
-
-			mototen = map.options.crs.project(map2.getLatLng())
-		});
+				map2.on('dragstart', (e) => {
+					transformedImage[fileInputname2].setOpacity(1)
+				});		
+				map2.on('dragend', (e) => {
+					// ドラッグ終了後のマーカーの緯度経度から画面座標を取得
+					containerPoint2 = map.latLngToContainerPoint(e.target.getLatLng());
+					updateMarkerPosition2();
+					transformedImage[fileInputname2].setOpacity(0.7)
+					mototen = map.options.crs.project(map2.getLatLng())
+				});
 				map.on('move resize', updateMarkerPosition2);
 
 				map.on("moveend", ido2);
@@ -808,4 +824,5 @@ document.getElementById('downloadJsonBtn').addEventListener('click', async () =>
     
 </body>
 </html>
+
 
